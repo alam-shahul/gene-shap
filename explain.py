@@ -5,6 +5,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import shap
 
+from vae.train import VAE
+
 def calculate_shap_values(model, training_data, test_data, K=None):
     """Calculate SHAP values for the given model.
 
@@ -23,9 +25,9 @@ def calculate_shap_values(model, training_data, test_data, K=None):
     if K:
         kmeans_summary = shap.kmeans(training_data, K)
         print("Finished k-means summarization!")
-        explainer = shap.KernelExplainer(svm.predict_proba, kmeans_summary, link="logit")
+        explainer = shap.KernelExplainer(model, kmeans_summary, link="logit")
     else:
-        explainer = shap.KernelExplainer(svm.predict_proba, training_data, link="logit")
+        explainer = shap.KernelExplainer(model, training_data, link="logit")
     
     shap_values = explainer.shap_values(test_data, nsamples=100)
 
@@ -52,20 +54,51 @@ def decompress_shap_values_pca(shap_values, inverse_projection):
 
     return decompressed_shap_values
 
+def calculate_deepshap_values(model, training_data, test_data, K=None):
+    """Calculate deepSHAP values for the given model.
+
+    Args:
+        model: trained deep model
+        training_data: data of shape (num_samples, num_features) on which model was trained
+        test_data: data of shape (num_samples, num_features) on which model was tested 
+        K: number of means to use for K-means summarization of training_data (used for
+            calculating feature importances in SHAP values); if None, then all the
+            training data are used for this calculation (potentially expensive)
+    
+    Returns:
+        A tuple consisting of 1. the explainer's expected values and 2. the SHAP values.
+    """
+
+    if K:
+        kmeans_summary = shap.kmeans(training_data, K)
+        print("Finished k-means summarization!")
+        explainer = shap.DeepExplainer(model, kmeans_summary, link="logit")
+    else:
+        explainer = shap.DeepExplainer(model, training_data, link="logit")
+    
+    shap_values = explainer.shap_values(test_data)
+
+    return explainer.expected_value, shap_values
+
 if __name__ == "__main__":
-    models_directory = Path("models")
+    models_directory = Path("models") / "full_dataset_l3"
 
     with open(models_directory / "forty_pc_svm.pkl", "rb") as f:
         svm = pickle.load(f)
 
     training_data = np.load(models_directory / "training_data.npy")
-    training_labels= np.loadtxt(models_directory / "training_labels.txt", dtype=str)
+    training_labels= np.loadtxt(models_directory / "training_labels.txt", dtype=str, delimiter="\t")
     test_data = np.load(models_directory / "test_data.npy")
-    test_labels = np.loadtxt(models_directory / "test_labels.txt", dtype=str)
+    test_labels = np.loadtxt(models_directory / "test_labels.txt", dtype=str, delimiter="\t")
+
+    training_data = training_data[:len(training_data)//3]
+    training_labels = training_data[:len(training_labels)//3]
+    test_data = training_data[:len(test_data)//3]
+    test_labels = training_data[:len(test_labels)//3]
 
     explanations_directory = Path("explanations")
     
-    # expected_value, shap_values = calculate_shap_values(svm.predict_proba, training_data, test_data, K=27)
+    expected_value, shap_values = calculate_shap_values(svm.predict_proba, training_data, test_data, K=27)
     # force_plot = shap.force_plot(expected_value[0], shap_values[0][0,:], test_data[0],# link="logit",
     #         matplotlib=True, show=False)
     # 
@@ -83,3 +116,29 @@ if __name__ == "__main__":
     print(decompressed_true_class_shap_values.shape)
     np.save(explanations_directory / "forty_pc_svm_decompressed_true_shap_values.npy", decompressed_true_class_shap_values)
     # np.save(explanations_directory / "forty_pc_svm_decompressed_shap_values.npy", decompressed_shap_values)
+
+    # models_directory = Path("models") / "full_dataset_l3_scvis"
+
+    # with open(models_directory / "ten_dimension_scvis_svm.pkl", "rb") as f:
+    #     svm = pickle.load(f)
+
+
+    # training_data = np.load(models_directory / "training_data.npy")
+    # training_labels= np.loadtxt(models_directory / "training_labels.txt", dtype=str, delimiter="\t")
+    # test_data = np.load(models_directory / "test_data.npy")
+    # test_labels = np.loadtxt(models_directory / "test_labels.txt", dtype=str, delimiter="\t")
+
+    # training_data = training_data[:len(training_data)//3]
+    # training_labels = training_data[:len(training_labels)//3]
+    # test_data = training_data[:len(test_data)//3]
+    # test_labels = training_data[:len(test_labels)//3]
+
+    # explanations_directory = Path("explanations")
+    # 
+    # expected_value, shap_values = calculate_shap_values(svm.predict_proba, training_data, test_data, K=27)
+    # np.save(explanations_directory / "ten_dimension_scvis_svm_explainer_expected_values.npy", explainer.expected_value)
+    # np.save(explanations_directory / "ten_dimension_scvis_svm_shap_values.npy", shap_values)
+
+    # expected_value, shap_values = calculate_shap_values(svm.predict_proba, training_data, test_data, K=27)
+    # np.save(explanations_directory / "ten_dimension_scvis_svm_explainer_expected_values.npy", explainer.expected_value)
+    # np.save(explanations_directory / "ten_dimension_scvis_svm_shap_values.npy", shap_values)

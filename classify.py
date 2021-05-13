@@ -47,22 +47,46 @@ def train_SVM(training_data, training_labels):
     return classifier
 
 if __name__ == "__main__":
-    data = np.load("pbma_forty_pcs.npy")
-    labels = np.load("l1_labels.npy", allow_pickle=True)
-    desired_clusters = ["NK", "B", "DC"]
+    # data = np.load("pbma_forty_pcs.npy")
+    # labels = np.load("l3_labels.npy", allow_pickle=True)
+    # # desired_clusters = ["NK", "B", "DC"]
     # desired_clusters = None
+
+    # training_data, test_data, training_labels, test_labels =  filter_and_split_data(data, labels, desired_clusters)
+    # print(training_data.shape)
+
+    # models_directory = Path("models") / "full_dataset_l3"
+    # models_directory.mkdir(parents=True, exist_ok=True)
+    # np.save(models_directory / "training_data.npy", training_data)
+    # np.save(models_directory / "test_data.npy", test_data)
+    # np.savetxt(models_directory / "training_labels.txt", training_labels, fmt="%s")
+    # np.savetxt(models_directory / "test_labels.txt", test_labels, fmt="%s")
+
+    # svm = train_SVM(training_data, training_labels)
+    # with open(models_directory / "forty_pc_svm.pkl", "wb") as f:
+    #     pickle.dump(svm, f, pickle.HIGHEST_PROTOCOL)
+    # 
+    # score = svm.score(test_data, test_labels)
+    # print("Top-1 Accuracy: {}".format(score))
+   
+    embeddings_directory = Path("embeddings")
+    data = np.load(embeddings_directory / "scvis_embeddings.npy")
+    labels = np.load("l3_labels.npy", allow_pickle=True)
+    # desired_clusters = ["NK", "B", "DC"]
+    desired_clusters = None
 
     training_data, test_data, training_labels, test_labels =  filter_and_split_data(data, labels, desired_clusters)
     print(training_data.shape)
 
-    models_directory = Path("models")
+    models_directory = Path("models") / "full_dataset_l3_scvis"
+    models_directory.mkdir(parents=True, exist_ok=True)
     np.save(models_directory / "training_data.npy", training_data)
     np.save(models_directory / "test_data.npy", test_data)
     np.savetxt(models_directory / "training_labels.txt", training_labels, fmt="%s")
     np.savetxt(models_directory / "test_labels.txt", test_labels, fmt="%s")
 
     svm = train_SVM(training_data, training_labels)
-    with open(models_directory / "forty_pc_svm.pkl", "wb") as f:
+    with open(models_directory / "ten_dimension_scvis_svm.pkl", "wb") as f:
         pickle.dump(svm, f, pickle.HIGHEST_PROTOCOL)
     
     score = svm.score(test_data, test_labels)

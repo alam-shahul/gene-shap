@@ -1,4 +1,6 @@
 import scanpy as sc
+import scipy.sparse
+import numpy as np
 
 def parse_pbmc_dataset(filepath):
     """Parse gene expression data and labels from PBMC dataset.
@@ -21,3 +23,4 @@ def parse_pbmc_dataset(filepath):
 
 if __name__ == "__main__":
     data, labels, genes = parse_pbmc_dataset("pbmc_multimodal.h5ad")
+    scipy.sparse.save_npz("raw_gene_expression.npz", data)
